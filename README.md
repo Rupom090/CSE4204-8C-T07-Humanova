@@ -525,8 +525,7 @@ CSE4204-8C-T07-Humanova/
 ├── testing/                     # Test suites
 ├── screenshots/                 # Application screenshots
 ├── LICENSE                      # MIT License
-├── README.md                    # This file
-└── Instructions.json            # Project instructions
+└── README.md                    # This file
 ```
 
 ---

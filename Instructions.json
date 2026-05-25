@@ -1,0 +1,181 @@
+{
+  "project": {
+    "name": "Humanova",
+    "repository_name": "CSE4204-8C-t07-humanova",
+    "project_type": "AI Hallucination Detection & Verification System",
+    "course": "CSE 4204 - Mobile Computing Lab",
+    "institution": "Northern University of Business and Technology Khulna",
+    "team_name": "CSE4204-8C-T07",
+    "section": "8C"
+  },
+  "instructions": {
+    "primary_goal": "Update and professionally restructure the LICENSE and README.md files according to the course handbook requirements and the project architecture documents.",
+    "before_anything": [
+      "Read all markdown documents inside the /docs directory first.",
+      "Analyze the architecture, PRD, system design, AI workflows, security architecture, analytics, deployment strategy, and technology stack before modifying README.md.",
+      "Extract accurate information only from the documentation.",
+      "Do not invent features that are not documented."
+    ],
+    "license_update": {
+      "task": "Create or update LICENSE file.",
+      "license_type": "MIT License",
+      "requirements": [
+        "Use professional MIT license formatting.",
+        "Set copyright year dynamically.",
+        "Use team repository/project ownership naming.",
+        "Ensure GitHub-compatible formatting."
+      ]
+    },
+    "readme_update": {
+      "task": "Completely rewrite README.md professionally.",
+      "requirements_from_handbook": [
+        "Project title",
+        "Team information",
+        "Features",
+        "Technology stack",
+        "Installation instructions",
+        "Deployment link",
+        "Screenshots"
+      ],
+      "required_sections": [
+        "Project Banner / Intro",
+        "Project Overview",
+        "Problem Statement",
+        "Objectives",
+        "Core Features",
+        "AI Verification Workflow",
+        "System Architecture Overview",
+        "Tech Stack",
+        "Frontend Architecture",
+        "Backend Architecture",
+        "AI & NLP Stack",
+        "Database Architecture",
+        "Authentication & RBAC",
+        "Prompt Enhancement Engine",
+        "Hallucination Detection Pipeline",
+        "Citation Verification Engine",
+        "Broken Link Checker",
+        "Uncertainty Keyword Scanner",
+        "Community Feedback Tracker",
+        "PDF Report Export System",
+        "Analytics Dashboard",
+        "Organization & Multi-user Support",
+        "User Roles",
+        "Installation Guide",
+        "Environment Variables",
+        "Running Frontend",
+        "Running Backend",
+        "Database Setup",
+        "API Key Setup",
+        "Deployment Instructions",
+        "Folder Structure",
+        "Documentation Structure",
+        "Screenshots Section Placeholder",
+        "API Architecture Summary",
+        "Security Features",
+        "AI Providers Supported",
+        "Scalability Goals",
+        "Development Workflow",
+        "Git Branch Strategy",
+        "Contribution Guidelines",
+        "Testing Overview",
+        "Future Scope",
+        "Team Information",
+        "Course Information",
+        "License"
+      ],
+      "team_information": {
+        "members": [
+          {
+            "name": "MD Robayet Hassan Rupom",
+            "id": "11220320979",
+            "role": "Frontend Developer & Team Leader"
+          },
+          {
+            "name": "Bushra Monzur Moumi",
+            "id": "11220321048",
+            "role": "AI Integration Lead"
+          },
+          {
+            "name": "Aqib Jawwad Nahin",
+            "id": "11220320969",
+            "role": "Backend Developer & Database Manager"
+          }
+        ]
+      },
+      "technical_requirements": [
+        "README must be highly professional and portfolio-quality.",
+        "Use modern GitHub markdown formatting.",
+        "Use badges for tech stack.",
+        "Use tables where appropriate.",
+        "Use clean section hierarchy.",
+        "Use proper markdown anchors.",
+        "Generate architecture diagrams using markdown mermaid syntax if suitable.",
+        "Add a complete folder structure tree.",
+        "Add API architecture summary table.",
+        "Add role-permission summary table.",
+        "Add environment variable examples.",
+        "Add setup instructions for both frontend and backend.",
+        "Add Docker-ready notes if architecture docs mention scalability.",
+        "Add placeholders for screenshots.",
+        "Add deployment placeholders.",
+        "Optimize README for recruiters, instructors, and GitHub visitors."
+      ],
+      "repository_structure_section": {
+        "include": [
+          "/frontend",
+          "/backend",
+          "/docs",
+          "/database",
+          "/ai-services",
+          "/deployment",
+          "/testing",
+          "/screenshots"
+        ]
+      },
+      "docs_folder_reference": {
+        "required": true,
+        "documents": [
+          "01-requirements-architecture-document.md",
+          "02-functional-specification-document.md",
+          "03-database-architecture-document.md",
+          "04-prd.md",
+          "05-design-document.md",
+          "06-tech-stack-document.md",
+          "07-system-architecture-diagram-document.md",
+          "08-api-specification-document.md",
+          "09-ai-verification-logic-specification.md",
+          "10-security-architecture-document.md",
+          "11-devops-deployment-architecture-document.md",
+          "12-ui-ux-component-system-document.md",
+          "13-queue-async-processing-architecture.md",
+          "14-analytics-reporting-specification.md",
+          "15-audit-compliance-specification.md",
+          "16-testing-qa-strategy-document.md",
+          "17-ai-provider-abstraction-specification.md",
+          "18-prompt-engineering-system-specification.md",
+          "19-knowledge-graph-intelligence-layer-spec.md",
+          "20-environment-configuration-document.md",
+          "21-error-handling-failure-recovery-document.md"
+        ]
+      },
+      "important_constraints": [
+        "Do not overwrite important existing repository content.",
+        "Do not remove existing contributors.",
+        "Do not generate fake deployment links.",
+        "Do not generate fake screenshots.",
+        "Do not generate fake API keys.",
+        "Do not expose secrets.",
+        "Keep README technically accurate.",
+        "Keep markdown lint-friendly."
+      ]
+    },
+    "output_expectation": {
+      "files_to_modify": [
+        "README.md",
+        "LICENSE"
+      ],
+      "quality_level": "Production-grade GitHub repository documentation"
+    }
+  }
+}

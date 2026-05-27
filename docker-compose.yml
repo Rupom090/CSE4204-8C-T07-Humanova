@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: humanova_backend
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - humanova_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: humanova_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - humanova_network
+
+  horizon:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: humanova_horizon
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan horizon
+    volumes:
+      - ./backend:/var/www
+      - ./docker/supervisor/horizon.conf:/etc/supervisor/conf.d/horizon.conf
+    depends_on:
+      - mysql
+      - redis
+      - backend
+    networks:
+      - humanova_network
+
+  python-ai:
+    build:
+      context: ./backend/python-ai-service
+      dockerfile: Dockerfile
+    container_name: humanova_python_ai
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend/python-ai-service:/app
+    networks:
+      - humanova_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: humanova_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-humanova}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - humanova_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: humanova_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - humanova_network
+
+networks:
+  humanova_network:
+    driver: bridge
+
+volumes:
+  db_data:
+  redis_data:

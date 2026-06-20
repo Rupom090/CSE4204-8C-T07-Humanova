@@ -24,12 +24,17 @@ class ApiKeyController extends Controller
     /**
      * List user's API keys (masked).
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $keys = UserApiKey::where('organization_id', $request->user()->organization_id)
-            ->with('provider')
-            ->get()
-            ->makeHidden('encrypted_key'); // Ensure raw key never exposed
+        $this->authorize('viewAny', UserApiKey::class);
+
+        $keys = UserApiKey::with('provider')
+            ->where('organization_id', $request->user()->current_organization_id)
+            ->paginate(20)
+            ->through(function ($key) {
+                $key->makeHidden('encrypted_key');
+                return $key;
+            });
             
         return $this->success($keys, 'API keys retrieved successfully');
     }
@@ -39,6 +44,8 @@ class ApiKeyController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', UserApiKey::class);
+
         $validated = $request->validate([
             'provider_id' => 'required|exists:ai_providers,id',
             'api_key' => 'required|string',
@@ -47,7 +54,6 @@ class ApiKeyController extends Controller
 
         $provider = AiProvider::find($validated['provider_id']);
 
-        // Test key validity before saving
         try {
             $adapter = $this->orchestrator->getAdapter($provider->slug, $validated['api_key']);
             if (!$adapter->validateKey($validated['api_key'])) {
@@ -57,15 +63,14 @@ class ApiKeyController extends Controller
             return $this->error('Failed to validate API key: ' . $e->getMessage(), 400);
         }
 
-        // Mask the key (e.g. sk-...1234)
         $keyLength = strlen($validated['api_key']);
         $maskedKey = substr($validated['api_key'], 0, 4) . str_repeat('*', max(0, $keyLength - 8)) . substr($validated['api_key'], -4);
 
         $apiKey = UserApiKey::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'provider_id' => $provider->id,
-            'encrypted_key' => $validated['api_key'], // Laravel encrypts this via model cast
+            'encrypted_key' => $validated['api_key'],
             'masked_key' => $maskedKey,
             'label' => $validated['label'] ?? "{$provider->name} Key",
             'status' => 'active',
@@ -77,13 +82,27 @@ class ApiKeyController extends Controller
     }
 
     /**
+     * Update the specified API key label.
+     */
+    public function update(Request $request, UserApiKey $apiKey)
+    {
+        $this->authorize('update', $apiKey);
+
+        $validated = $request->validate([
+            'label' => 'required|string|max:255',
+        ]);
+
+        $apiKey->update($validated);
+
+        return $this->success($apiKey, 'API key updated successfully');
+    }
+
+    /**
      * Remove the specified API key.
      */
     public function destroy(Request $request, UserApiKey $apiKey)
     {
-        if ($apiKey->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('delete', $apiKey);
 
         $apiKey->delete();
         
@@ -95,9 +114,7 @@ class ApiKeyController extends Controller
      */
     public function validateKey(Request $request, UserApiKey $apiKey)
     {
-        if ($apiKey->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $apiKey);
 
         try {
             $adapter = $this->orchestrator->getAdapter($apiKey->provider->slug, $apiKey->encrypted_key);
@@ -111,7 +128,7 @@ class ApiKeyController extends Controller
                 return $this->success(['is_valid' => false], 'API key is invalid');
             }
         } catch (\Exception $e) {
-            return $this->serverError('Validation check failed');
+            return $this->error('Validation check failed', 500);
         }
     }
 }

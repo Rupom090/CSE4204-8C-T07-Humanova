@@ -7,6 +7,7 @@ use App\Models\Scan;
 use App\Models\AiGeneration;
 use App\Services\Verification\ScanPipelineService;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ScanController extends Controller
@@ -20,9 +21,11 @@ class ScanController extends Controller
         $this->pipelineService = $pipelineService;
     }
 
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $query = Scan::where('organization_id', $request->user()->organization_id)
+        $this->authorize('viewAny', Scan::class);
+
+        $query = Scan::where('organization_id', $request->user()->current_organization_id)
             ->with(['generation.provider']);
 
         if ($request->has('status')) {
@@ -32,8 +35,10 @@ class ScanController extends Controller
         return $this->paginated($query->latest()->paginate(15), 'Scans retrieved successfully');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Scan::class);
+
         $validated = $request->validate([
             'generation_id' => 'required|exists:ai_generations,id',
             'scan_type' => 'nullable|string|in:internal,external',
@@ -41,12 +46,12 @@ class ScanController extends Controller
 
         $generation = AiGeneration::findOrFail($validated['generation_id']);
 
-        if ($generation->organization_id !== $request->user()->organization_id) {
+        if ($generation->organization_id !== $request->user()->current_organization_id) {
             return $this->forbidden();
         }
 
         $scan = Scan::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'generation_id' => $generation->id,
             'scan_type' => $validated['scan_type'] ?? 'internal',
@@ -58,40 +63,41 @@ class ScanController extends Controller
         return $this->created($scan, 'Verification scan queued successfully');
     }
 
-    public function show(Request $request, Scan $scan)
+    public function show(Request $request, Scan $scan): JsonResponse
     {
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $scan);
 
         $scan->load(['generation', 'confidenceScore', 'claims.verificationResults']);
         return $this->success($scan, 'Scan retrieved successfully');
     }
 
-    public function claims(Request $request, Scan $scan)
+    public function destroy(Request $request, Scan $scan): JsonResponse
     {
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('delete', $scan);
+
+        $scan->delete();
+
+        return $this->noContent('Scan deleted successfully');
+    }
+
+    public function claims(Request $request, Scan $scan): JsonResponse
+    {
+        $this->authorize('view', $scan);
         
         return $this->success($scan->claims, 'Claims retrieved successfully');
     }
 
-    public function evidence(Request $request, Scan $scan)
+    public function evidence(Request $request, Scan $scan): JsonResponse
     {
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $scan);
 
         $evidence = $scan->claims()->with('verificationResults.evidence')->get()->pluck('verificationResults.*.evidence')->flatten();
         return $this->success($evidence, 'Evidence retrieved successfully');
     }
 
-    public function confidence(Request $request, Scan $scan)
+    public function confidence(Request $request, Scan $scan): JsonResponse
     {
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $scan);
 
         return $this->success($scan->confidenceScore()->with('explanations')->first(), 'Confidence score retrieved successfully');
     }

@@ -6,49 +6,38 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Models\OrganizationInvitation;
+use App\Models\Organization;
 
-class OrganizationInvitationNotification extends Notification
+class OrganizationInvitationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new notification instance.
-     */
-    public function __construct()
-    {
-        //
+    public function __construct(
+        private OrganizationInvitation $invitation,
+        private string $token,
+        private Organization $organization
+    ) {
+        $this->queue = 'notifications';
     }
 
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @return array<int, string>
-     */
     public function via(object $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Get the mail representation of the notification.
-     */
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
-    }
+        $acceptUrl = rtrim(config('app.frontend_url', config('app.url')), '/')
+            . '/invitations/accept?token=' . $this->token;
 
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
-    {
-        return [
-            //
-        ];
+        return (new MailMessage)
+            ->subject('You have been invited to join ' . $this->organization->name)
+            ->greeting('Hello!')
+            ->line('You have been invited to join the organization "' . $this->organization->name . '" on Humanova.')
+            ->action('Accept Invitation', $acceptUrl)
+            ->line('This invitation will expire in 7 days.')
+            ->line('If you do not wish to join this organization, you can safely ignore this email.')
+            ->salutation('The Humanova Team');
     }
 }

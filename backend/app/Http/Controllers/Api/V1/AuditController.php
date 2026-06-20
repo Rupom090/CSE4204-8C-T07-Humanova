@@ -6,15 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\SecurityEvent;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuditController extends Controller
 {
     use ApiResponse;
 
-    public function logs(Request $request)
+    public function logs(Request $request): JsonResponse
     {
-        $query = AuditLog::where('organization_id', $request->user()->organization_id)
+        $this->authorize('viewAny', AuditLog::class);
+
+        $query = AuditLog::where('organization_id', $request->user()->current_organization_id)
             ->with('user')
             ->latest();
 
@@ -25,12 +28,12 @@ class AuditController extends Controller
         return $this->paginated($query->paginate(25), 'Audit logs retrieved');
     }
 
-    public function securityEvents(Request $request)
+    public function securityEvents(Request $request): JsonResponse
     {
-        // Simple mock since SecurityEvent might not be tied to an organization directly in standard schema, 
-        // assuming we tie it by user's org for this context
+        $this->authorize('viewAny', AuditLog::class);
+
         $events = SecurityEvent::whereIn('user_id', function($q) use ($request) {
-                $q->select('id')->from('users')->where('organization_id', $request->user()->organization_id);
+                $q->select('id')->from('users')->where('organization_id', $request->user()->current_organization_id);
             })
             ->latest()
             ->paginate(25);

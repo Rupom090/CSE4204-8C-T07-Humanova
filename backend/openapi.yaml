@@ -1,0 +1,74 @@
+openapi: 3.0.0
+info:
+  title: Humanova API
+  description: API for the Humanova AI Hallucination Detection & Verification System.
+  version: 1.0.0
+servers:
+  - url: https://api.humanova.app/api/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+    ForbiddenError:
+      description: The user does not have permission to perform this action
+    NotFoundError:
+      description: The requested resource was not found
+paths:
+  /auth/login:
+    post:
+      summary: User Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: Password123!
+      responses:
+        '200':
+          description: Successful login
+        '401':
+          description: Invalid credentials
+  /organizations:
+    get:
+      summary: List user's organizations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of organizations
+  /scans:
+    post:
+      summary: Submit a text or document for scanning
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: The text to scan
+                type:
+                  type: string
+                  enum: [text, url, document]
+      responses:
+        '201':
+          description: Scan created and queued for processing

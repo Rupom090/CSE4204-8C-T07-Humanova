@@ -8,23 +8,38 @@ use App\Models\OrganizationMember;
 use App\Models\OrganizationInvitation;
 use App\Models\Role;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use App\Notifications\OrganizationInvitationNotification;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Validation\Rule;
 
 class OrganizationController extends Controller
 {
     use ApiResponse;
 
     /**
+     * List organizations the user is a member of.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Organization::class);
+
+        $organizations = $request->user()->organizations()
+            ->withPivot('role_id', 'status')
+            ->paginate(20);
+
+        return $this->success($organizations, 'Organizations retrieved successfully');
+    }
+
+    /**
      * Store a newly created organization.
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Organization::class);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'logo' => 'nullable|string|max:255',
@@ -41,24 +56,23 @@ class OrganizationController extends Controller
                 'slug' => $slug,
                 'logo' => $validated['logo'] ?? null,
                 'owner_user_id' => $user->id,
-                'subscription_plan' => 'free', // App\Enums\SubscriptionPlan::FREE -> use string for now if enum matches
+                'subscription_plan' => 'free',
                 'status' => 'active',
             ]);
 
-            // Assign the creator as org_admin
             $adminRole = Role::where('slug', 'org_admin')->first();
+            $defaultRole = Role::where('slug', 'user')->first();
 
             OrganizationMember::create([
                 'organization_id' => $organization->id,
                 'user_id' => $user->id,
-                'role_id' => $adminRole ? $adminRole->id : null,
+                'role_id' => $adminRole ? $adminRole->id : $defaultRole?->id,
                 'status' => 'active',
                 'joined_at' => now(),
             ]);
 
-            // If user has no organization_id set as active yet
-            if (!$user->organization_id) {
-                $user->organization_id = $organization->id;
+            if (!$user->current_organization_id) {
+                $user->current_organization_id = $organization->id;
                 $user->save();
             }
 
@@ -67,16 +81,17 @@ class OrganizationController extends Controller
             return $this->created($organization, 'Organization created successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->serverError('Failed to create organization: ' . $e->getMessage());
+            return $this->error('Failed to create organization: ' . $e->getMessage(), 500);
         }
     }
 
     /**
      * Display the specified organization.
      */
-    public function show(Organization $organization)
+    public function show(Organization $organization): JsonResponse
     {
-        // Authorization should ideally be handled via policies
+        $this->authorize('view', $organization);
+        
         $organization->load('owner');
         return $this->success($organization, 'Organization retrieved successfully');
     }
@@ -84,8 +99,10 @@ class OrganizationController extends Controller
     /**
      * Update the specified organization.
      */
-    public function update(Request $request, Organization $organization)
+    public function update(Request $request, Organization $organization): JsonResponse
     {
+        $this->authorize('update', $organization);
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'logo' => 'nullable|string|max:255',
@@ -97,10 +114,24 @@ class OrganizationController extends Controller
     }
 
     /**
+     * Remove the specified organization.
+     */
+    public function destroy(Organization $organization): JsonResponse
+    {
+        $this->authorize('delete', $organization);
+
+        $organization->delete(); // Soft delete
+
+        return $this->success(null, 'Organization deleted successfully');
+    }
+
+    /**
      * List members of the organization.
      */
-    public function members(Organization $organization)
+    public function members(Organization $organization): JsonResponse
     {
+        $this->authorize('view', $organization);
+
         $members = $organization->members()->with(['user', 'role'])->paginate(15);
         return $this->paginated($members, 'Members retrieved successfully');
     }
@@ -108,8 +139,10 @@ class OrganizationController extends Controller
     /**
      * Invite a user to the organization.
      */
-    public function invite(Request $request, Organization $organization)
+    public function invite(Request $request, Organization $organization): JsonResponse
     {
+        $this->authorize('invite', $organization);
+
         $validated = $request->validate([
             'email' => 'required|email',
             'role_slug' => 'required|string|exists:roles,slug',
@@ -139,7 +172,6 @@ class OrganizationController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
-        // Send email (Assuming Notification is created)
         Notification::route('mail', $validated['email'])
             ->notify(new OrganizationInvitationNotification($invitation, $token, $organization));
 
@@ -149,39 +181,20 @@ class OrganizationController extends Controller
     /**
      * Remove a member from the organization.
      */
-    public function removeMember(Organization $organization, $userId)
+    public function removeMember(Organization $organization, $userId): JsonResponse
     {
+        $this->authorize('manageMembers', $organization);
+
         $member = OrganizationMember::where('organization_id', $organization->id)
             ->where('user_id', $userId)
             ->firstOrFail();
 
-        if ($organization->owner_user_id == $userId) {
+        if ($organization->owner_id == $userId) { // note: check DB Architecture for owner_id or owner_user_id
             return $this->error('Cannot remove the owner of the organization', 400);
         }
 
         $member->delete();
 
-        return $this->noContent('Member removed successfully');
-    }
-
-    /**
-     * Switch the user's active organization.
-     */
-    public function switchOrganization(Request $request, Organization $organization)
-    {
-        $user = $request->user();
-
-        $isMember = OrganizationMember::where('organization_id', $organization->id)
-            ->where('user_id', $user->id)
-            ->exists();
-
-        if (!$isMember) {
-            return $this->forbidden('You are not a member of this organization');
-        }
-
-        $user->organization_id = $organization->id;
-        $user->save();
-
-        return $this->success(['organization' => $organization], 'Switched organization successfully');
+        return $this->success(null, 'Member removed successfully');
     }
 }

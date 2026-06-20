@@ -8,14 +8,17 @@ use App\Models\ReportVote;
 use App\Models\Scan;
 use App\Models\ExtractedClaim;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CommunityController extends Controller
 {
     use ApiResponse;
 
-    public function submitReport(Request $request)
+    public function submitReport(Request $request): JsonResponse
     {
+        $this->authorize('create', HallucinationReport::class);
+
         $validated = $request->validate([
             'scan_id' => 'required|exists:scans,id',
             'claim_id' => 'nullable|exists:extracted_claims,id',
@@ -26,12 +29,12 @@ class CommunityController extends Controller
 
         $scan = Scan::findOrFail($validated['scan_id']);
         
-        if ($scan->organization_id !== $request->user()->organization_id) {
+        if ($scan->organization_id !== $request->user()->current_organization_id) {
             return $this->forbidden();
         }
 
         $report = HallucinationReport::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'scan_id' => $scan->id,
             'claim_id' => $validated['claim_id'] ?? null,
@@ -44,15 +47,13 @@ class CommunityController extends Controller
         return $this->created($report, 'Report submitted successfully');
     }
 
-    public function vote(Request $request, HallucinationReport $report)
+    public function vote(Request $request, HallucinationReport $report): JsonResponse
     {
+        $this->authorize('view', $report);
+
         $validated = $request->validate([
             'vote_type' => 'required|string|in:up,down',
         ]);
-
-        if ($report->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
 
         ReportVote::updateOrCreate(
             ['report_id' => $report->id, 'user_id' => $request->user()->id],
@@ -62,9 +63,11 @@ class CommunityController extends Controller
         return $this->success(null, 'Vote recorded');
     }
 
-    public function listReports(Request $request)
+    public function listReports(Request $request): JsonResponse
     {
-        $query = HallucinationReport::where('organization_id', $request->user()->organization_id)
+        $this->authorize('viewAny', HallucinationReport::class);
+
+        $query = HallucinationReport::where('organization_id', $request->user()->current_organization_id)
             ->with(['user', 'scan']);
 
         if ($request->has('status')) {
@@ -72,5 +75,25 @@ class CommunityController extends Controller
         }
 
         return $this->paginated($query->paginate(15), 'Reports retrieved');
+    }
+
+    public function showReport(Request $request, HallucinationReport $report): JsonResponse
+    {
+        $this->authorize('view', $report);
+
+        $report->load(['user', 'scan', 'claim']);
+        return $this->success($report, 'Report retrieved successfully');
+    }
+
+    public function uploadEvidence(Request $request, HallucinationReport $report): JsonResponse
+    {
+        $this->authorize('create', HallucinationReport::class); // Reusing create permission
+
+        $request->validate([
+            'evidence_file' => 'required|file|max:10240',
+        ]);
+
+        // Logic to store evidence and associate it with the report
+        return $this->success(null, 'Evidence uploaded successfully');
     }
 }

@@ -10,21 +10,18 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            ['name' => 'View Organizations', 'slug' => 'view_organizations'],
-            ['name' => 'Create Organizations', 'slug' => 'create_organizations'],
-            ['name' => 'Edit Organizations', 'slug' => 'edit_organizations'],
-            ['name' => 'Delete Organizations', 'slug' => 'delete_organizations'],
-            
-            ['name' => 'View Prompts', 'slug' => 'view_prompts'],
-            ['name' => 'Create Prompts', 'slug' => 'create_prompts'],
-            ['name' => 'Edit Prompts', 'slug' => 'edit_prompts'],
-            ['name' => 'Delete Prompts', 'slug' => 'delete_prompts'],
-            
-            ['name' => 'Run Scans', 'slug' => 'run_scans'],
-            ['name' => 'View Reports', 'slug' => 'view_reports'],
-            ['name' => 'Verify Reports', 'slug' => 'verify_reports'],
+            ['name' => 'Manage Organization', 'slug' => 'manage-organization', 'description' => 'Can edit organization details'],
+            ['name' => 'Invite Members', 'slug' => 'invite-members', 'description' => 'Can invite new users to org'],
+            ['name' => 'Approve Reports', 'slug' => 'approve-reports', 'description' => 'Can approve hallucination reports'],
+            ['name' => 'Reject Reports', 'slug' => 'reject-reports', 'description' => 'Can reject hallucination reports'],
+            ['name' => 'View Audit Logs', 'slug' => 'view-audit-logs', 'description' => 'Can view immutable audit logs'],
+            ['name' => 'Manage API Keys', 'slug' => 'manage-api-keys', 'description' => 'Can create and delete API keys'],
+            ['name' => 'View Analytics', 'slug' => 'view-analytics', 'description' => 'Can view dashboard and analytics'],
+            ['name' => 'Assign Roles', 'slug' => 'assign-roles', 'description' => 'Can change member roles'],
         ];
 
-        DB::table('permissions')->insertOrIgnore($permissions);
+        foreach ($permissions as $permission) {
+            \App\Models\Permission::firstOrCreate(['slug' => $permission['slug']], $permission);
+        }
     }
 }

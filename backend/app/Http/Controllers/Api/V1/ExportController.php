@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PdfExport;
 use App\Jobs\GeneratePdfExport;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -13,19 +14,21 @@ class ExportController extends Controller
 {
     use ApiResponse;
 
-    public function generatePdf(Request $request)
+    public function generatePdf(Request $request): JsonResponse
     {
+        $this->authorize('create', PdfExport::class);
+
         $validated = $request->validate([
             'export_type' => 'required|string|in:scan_report,analytics_summary,moderation_report,org_report',
             'scan_id' => 'nullable|exists:scans,id',
         ]);
 
         $export = PdfExport::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'export_type' => $validated['export_type'],
             'scan_id' => $validated['scan_id'] ?? null,
-            'file_path' => 'exports/' . Str::uuid() . '.pdf', // Placeholder path
+            'file_path' => 'exports/' . Str::uuid() . '.pdf',
             'export_status' => 'queued',
         ]);
 
@@ -34,25 +37,24 @@ class ExportController extends Controller
         return $this->created($export, 'PDF export queued successfully');
     }
 
-    public function download(Request $request, PdfExport $export)
+    public function download(Request $request, PdfExport $export): JsonResponse
     {
-        if ($export->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $export);
 
         if ($export->export_status !== 'completed') {
             return $this->error('Export is not ready yet', 400);
         }
 
-        // Mock signed URL generation
         $url = url('/storage/' . $export->file_path);
 
         return $this->success(['url' => $url], 'Download URL generated');
     }
 
-    public function history(Request $request)
+    public function history(Request $request): JsonResponse
     {
-        $history = PdfExport::where('organization_id', $request->user()->organization_id)
+        $this->authorize('viewAny', PdfExport::class);
+
+        $history = PdfExport::where('organization_id', $request->user()->current_organization_id)
             ->latest()
             ->paginate(15);
             

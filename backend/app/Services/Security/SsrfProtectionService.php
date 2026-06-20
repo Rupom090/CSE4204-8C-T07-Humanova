@@ -39,9 +39,9 @@ class SsrfProtectionService
             return false;
         }
 
-        // 4. Check dynamic DB blocked IP ranges (simplified check for exact IP match for now)
-        // A full implementation would use CIDR matching.
-        if (BlockedIpRange::where('ip_range', $ip)->exists()) {
+        // 4. Check dynamic DB blocked IP ranges
+        $blockedRanges = BlockedIpRange::pluck('ip_range')->toArray();
+        if (\Symfony\Component\HttpFoundation\IpUtils::checkIp($ip, $blockedRanges)) {
             return false;
         }
 

@@ -9,6 +9,7 @@ use App\Services\Verification\ScanPipelineService;
 use App\Services\Verification\CitationVerifierService;
 use App\Services\Verification\LinkCheckerService;
 use App\Traits\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class VerificationController extends Controller
@@ -32,23 +33,24 @@ class VerificationController extends Controller
     /**
      * Verify pasted AI response without internal generation log
      */
-    public function verifyExternal(Request $request)
+    public function verifyExternal(Request $request): JsonResponse
     {
+        $this->authorize('create', Scan::class);
+
         $validated = $request->validate([
             'text' => 'required|string',
             'provider_name' => 'nullable|string',
         ]);
 
-        // Create a dummy generation record for external text to attach the scan
         $generation = AiGeneration::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'response_text' => $validated['text'],
             'status' => 'completed',
         ]);
 
         $scan = Scan::create([
-            'organization_id' => $request->user()->organization_id,
+            'organization_id' => $request->user()->current_organization_id,
             'user_id' => $request->user()->id,
             'generation_id' => $generation->id,
             'scan_type' => 'external',
@@ -63,7 +65,7 @@ class VerificationController extends Controller
     /**
      * One-off citation verification
      */
-    public function verifyCitations(Request $request)
+    public function verifyCitations(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'scan_id' => 'required|exists:scans,id',
@@ -72,9 +74,7 @@ class VerificationController extends Controller
         ]);
 
         $scan = Scan::findOrFail($validated['scan_id']);
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $scan);
 
         $result = $this->citationVerifier->verifyCitation($scan->id, $validated['citation_text'], $validated['doi'] ?? null);
 
@@ -84,7 +84,7 @@ class VerificationController extends Controller
     /**
      * One-off link checking
      */
-    public function checkLinks(Request $request)
+    public function checkLinks(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'scan_id' => 'required|exists:scans,id',
@@ -92,12 +92,29 @@ class VerificationController extends Controller
         ]);
 
         $scan = Scan::findOrFail($validated['scan_id']);
-        if ($scan->organization_id !== $request->user()->organization_id) {
-            return $this->forbidden();
-        }
+        $this->authorize('view', $scan);
 
         $result = $this->linkChecker->checkLink($scan->id, $validated['url']);
 
         return $this->success($result, 'Link checked');
+    }
+
+    /**
+     * Get extracted links from a scan
+     */
+    public function getLinks(Request $request, Scan $scan): JsonResponse
+    {
+        $this->authorize('view', $scan);
+
+        // Fetch verification results that are type link for this scan's claims
+        $links = $scan->claims()
+            ->with(['verificationResults' => function($query) {
+                $query->where('verification_type', 'link_check');
+            }])
+            ->get()
+            ->pluck('verificationResults')
+            ->flatten();
+
+        return $this->success($links, 'Links retrieved successfully');
     }
 }

@@ -20,6 +20,7 @@ class SettingsController extends Controller
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
             'username' => 'sometimes|required|string|max:255|unique:users,username,' . $request->user()->id,
             'avatar' => 'nullable|string',
         ]);

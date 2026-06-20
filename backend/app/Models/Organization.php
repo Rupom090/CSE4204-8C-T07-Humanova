@@ -46,4 +46,14 @@ class Organization extends Model
     {
         return $this->hasMany(UserApiKey::class);
     }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(OrganizationInvitation::class);
+    }
+
+    public function scans(): HasMany
+    {
+        return $this->hasMany(Scan::class);
+    }
 }

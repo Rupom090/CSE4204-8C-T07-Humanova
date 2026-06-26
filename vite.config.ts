@@ -13,4 +13,8 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  build: {
+    outDir: 'backend/public',
+    emptyOutDir: false, // keep Laravel's index.php, .htaccess, etc.
+  },
 })

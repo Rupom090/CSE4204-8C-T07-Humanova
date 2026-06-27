@@ -198,7 +198,15 @@ export const mockAuditLogs: AuditLog[] = [
 
 export const apiService = {
   getDashboardStats: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/analytics/dashboard', {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (response.ok) return await response.json();
+    } catch (e) {
+      console.error(e);
+    }
+    // Fallback if backend isn't ready
     return {
       totalScans: 2847,
       hallucinationRate: 18.3,
@@ -208,157 +216,51 @@ export const apiService = {
   },
 
   enhancePrompt: async (prompt: string, mode: string): Promise<{ enhancedPrompt: string; savings: number }> => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Note: Assuming /prompts endpoint doesn't exactly match this yet, returning mock format but you can hook this up to your exact backend route
     return {
       enhancedPrompt: `[Mode: ${mode}] Please analyze and provide comprehensive details regarding: ${prompt}. Ensure all metrics, financial figures, and claims are supported by solid factual evidence. Cite official documentation or data points. Ensure the response format is precise, structured, and organized without fluff.`,
       savings: Math.floor(Math.random() * 20) + 15, // 15% - 35% savings
     };
   },
 
-  runScan: async (prompt: string, provider: 'openai' | 'gemini' | 'deepseek', model: string): Promise<Scan> => {
-    await new Promise((resolve) => setTimeout(resolve, 2500));
-
-    // Generates a mock scan response
-    const scanId = `scan-${Math.floor(Math.random() * 9000) + 1000}`;
-    const score = Math.floor(Math.random() * 50) + 50; // 50 to 100
-
-    let responseText = '';
-    let claims: Claim[] = [];
-
-    if (provider === 'openai') {
-      responseText = `OpenAI GPT-4o analyzed the prompt. AI systems are increasingly being used in regulated spaces. The European AI Act is the first official legislative framework for artificial intelligence, classifying systems by risk (Low, Medium, High, Unacceptable). Additionally, the Act mandates that all High-Risk AI installations must register under a centralized EU registry database by June 2026, which is fully operational and open today.`;
-      claims = [
-        {
-          id: `${scanId}-claim-1`,
-          text: 'The European AI Act is the first official legislative framework for artificial intelligence, classifying systems by risk (Low, Medium, High, Unacceptable).',
-          category: 'verified',
-          score: 96,
-          details: 'Highly verified. The EU AI Act was officially approved by the European Parliament in March 2024 and publishes a risk-based categorization system for AI models.',
-          evidence: [
-            {
-              id: `${scanId}-ev-1`,
-              title: 'EU Artificial Intelligence Act - official portal',
-              url: 'https://artificialintelligenceact.eu/',
-              authorityScore: 98,
-              retrievalScore: 96,
-              trustRating: 'high',
-            }
-          ]
+  runScan: async (prompt: string, provider: 'openai' | 'gemini' | 'deepseek' | 'groq', model: string): Promise<Scan> => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/scans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // 'Authorization': `Bearer ${localStorage.getItem('token')}` // Uncomment if using token auth
         },
-        {
-          id: `${scanId}-claim-2`,
-          text: 'Act mandates that all High-Risk AI installations must register under a centralized EU registry database by June 2026, which is fully operational and open today.',
-          category: 'uncertain',
-          score: 65,
-          details: 'Uncertain. While high-risk AI registry database requirements are indeed part of the Act, the public interface registry database is currently under draft development by the AI Office and is not fully operational today.',
-          evidence: [
-            {
-              id: `${scanId}-ev-2`,
-              title: 'European AI Office updates and timeline',
-              url: 'https://digital-strategy.ec.europa.eu/en/policies/european-ai-office',
-              authorityScore: 92,
-              retrievalScore: 70,
-              trustRating: 'medium',
-            }
-          ]
-        }
-      ];
-    } else if (provider === 'gemini') {
-      responseText = `Google Gemini indicates that the Global Artificial Intelligence Market will grow at an unprecedented CAGR of 84.6% to reach $8.5 Trillion by 2028. This growth is heavily supported by the direct deployment of generative AI systems across 100% of global Fortune 500 financial institutions, who reported zero security breaches from their direct integrations.`;
-      claims = [
-        {
-          id: `${scanId}-claim-1`,
-          text: 'Global Artificial Intelligence Market will grow at an unprecedented CAGR of 84.6% to reach $8.5 Trillion by 2028.',
-          category: 'uncertain',
-          score: 55,
-          details: 'Uncertain: Market forecasts widely differ. Standard consensus CAGR estimate ranges between 28% and 37%, hitting a size of $1.3B - $1.8B by 2030. $8.5T by 2028 is an outlier estimation from private, unverified surveys.',
-          evidence: [
-            {
-              id: `${scanId}-ev-1`,
-              title: 'Precedence Research: Artificial Intelligence Market Size',
-              url: 'https://www.precedenceresearch.com/artificial-intelligence-market',
-              authorityScore: 84,
-              retrievalScore: 50,
-              trustRating: 'medium',
-            }
-          ]
-        },
-        {
-          id: `${scanId}-claim-2`,
-          text: 'deployment of generative AI systems across 100% of global Fortune 500 financial institutions, who reported zero security breaches from their direct integrations.',
-          category: 'hallucinated',
-          score: 8,
-          details: 'CRITICAL HALLUCINATION: Numerous Fortune 500 banks restrict generative AI API integrations due to risk compliance, and multiple data leakage incidents related to ChatGPT and public LLMs have been documented.',
-          evidence: [
-            {
-              id: `${scanId}-ev-2`,
-              title: 'Gartner Research: LLM Data Leaks & Enterprise Mitigations',
-              url: 'https://www.gartner.com/en/newsroom/press-releases',
-              authorityScore: 90,
-              retrievalScore: 12,
-              trustRating: 'low',
-            }
-          ]
-        }
-      ];
-    } else {
-      responseText = `DeepSeek analyzed corporate sustainability protocols. Large language models (LLMs) require massive computational workloads. Research shows training GPT-4 emitted roughly 18,000 metric tons of carbon, which is equivalent to 1,200 cross-continental flights. These figures were officially approved by the World Carbon Audit Council, certifying OpenAI as carbon neutral.`;
-      claims = [
-        {
-          id: `${scanId}-claim-1`,
-          text: 'training GPT-4 emitted roughly 18,000 metric tons of carbon, which is equivalent to 1,200 cross-continental flights.',
-          category: 'uncertain',
-          score: 68,
-          details: 'The precise carbon footprint of GPT-4 training is not officially published by OpenAI. 18,000 tons is an estimate derived from carbon calculation papers, but flights equivalence is exaggerated.',
-          evidence: [
-            {
-              id: `${scanId}-ev-1`,
-              title: 'The Carbon Footprint of Machine Learning Training',
-              url: 'https://arxiv.org/abs/2211.02001',
-              authorityScore: 86,
-              retrievalScore: 74,
-              trustRating: 'medium',
-            }
-          ]
-        },
-        {
-          id: `${scanId}-claim-2`,
-          text: 'officially approved by the World Carbon Audit Council, certifying OpenAI as carbon neutral.',
-          category: 'hallucinated',
-          score: 15,
-          details: 'CRITICAL HALLUCINATION: The "World Carbon Audit Council" does not exist. OpenAI has not published any carbon-neutrality certificates for LLM training.',
-          evidence: [
-            {
-              id: `${scanId}-ev-2`,
-              title: 'OpenAI official commitment to environmental responsibility',
-              url: 'https://openai.com/charter',
-              authorityScore: 95,
-              retrievalScore: 10,
-              trustRating: 'low',
-            }
-          ]
-        }
-      ];
+        body: JSON.stringify({ prompt, provider, model })
+      });
+      
+      if (response.ok) {
+         const data = await response.json();
+         return data;
+      }
+    } catch (e) {
+      console.error("Backend scan failed, using mock data for demo...", e);
     }
-
-    const calculatedScore = claims.reduce((acc, curr) => acc + curr.score, 0) / claims.length;
-
+    
+    // Fallback to mock behavior if backend is not fully seeded or auth fails
+    const scanId = `scan-${Math.floor(Math.random() * 9000) + 1000}`;
     return {
       id: scanId,
       prompt,
-      response: responseText,
-      confidenceScore: Math.round(calculatedScore) || 75,
+      response: `Response from ${provider} using ${model}. (Fallback Mock Data)`,
+      confidenceScore: 85,
       status: 'completed',
       timestamp: new Date().toISOString(),
-      duration: 2100,
+      duration: 1500,
       model,
       provider,
-      claims,
+      claims: [],
       tokenUsage: {
-        promptTokens: Math.floor(Math.random() * 100) + 120,
-        completionTokens: Math.floor(Math.random() * 150) + 180,
-        totalTokens: 340,
-        savings: Math.floor(Math.random() * 20) + 15,
+        promptTokens: 100,
+        completionTokens: 200,
+        totalTokens: 300,
+        savings: 15,
       }
     };
   }

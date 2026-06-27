@@ -30,8 +30,8 @@ return new class extends Migration
 
             // Aggregation period
             $table->enum('period_type', ['hourly', 'daily', 'weekly', 'monthly'])->default('daily');
-            $table->timestamp('period_start');
-            $table->timestamp('period_end');
+            $table->timestamp('period_start')->nullable();
+            $table->timestamp('period_end')->nullable();
 
             $table->timestamps();
 

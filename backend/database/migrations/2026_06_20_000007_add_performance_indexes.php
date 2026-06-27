@@ -16,7 +16,7 @@ return new class extends Migration
 
         Schema::table('audit_logs', function (Blueprint $table) {
             $table->index(['organization_id', 'created_at'], 'audit_org_created_idx');
-            $table->index(['organization_id', 'action_type'], 'audit_org_action_idx');
+            $table->index(['organization_id', 'action'], 'audit_org_action_idx');
         });
 
         Schema::table('ai_generations', function (Blueprint $table) {
@@ -33,10 +33,7 @@ return new class extends Migration
             $table->index(['organization_id', 'moderation_status'], 'hr_org_status_idx');
         });
 
-        Schema::table('security_events', function (Blueprint $table) {
-            $table->index('organization_id', 'se_org_idx');
-            $table->index(['organization_id', 'created_at'], 'se_org_created_idx');
-        });
+        // Removed security_events index because organization_id doesn't exist
     }
 
     public function down(): void
@@ -65,9 +62,6 @@ return new class extends Migration
             $table->dropIndex('hr_org_status_idx');
         });
 
-        Schema::table('security_events', function (Blueprint $table) {
-            $table->dropIndex('se_org_idx');
-            $table->dropIndex('se_org_created_idx');
-        });
+        // Removed security_events index drop because organization_id doesn't exist
     }
 };

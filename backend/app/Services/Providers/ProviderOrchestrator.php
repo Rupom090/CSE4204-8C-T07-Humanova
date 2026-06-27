@@ -18,6 +18,7 @@ class ProviderOrchestrator
             'openai' => new OpenAiAdapter($apiKey),
             'gemini' => new GeminiAdapter($apiKey),
             'deepseek' => new DeepSeekAdapter($apiKey),
+            'groq' => new GroqAdapter($apiKey),
             default => throw new \InvalidArgumentException("Provider [{$providerSlug}] not supported."),
         };
     }

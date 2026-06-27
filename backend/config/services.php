@@ -47,4 +47,15 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URL', '/api/v1/auth/oauth/google/callback'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AI Providers
+    |--------------------------------------------------------------------------
+    */
+
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+        'base_url' => env('GROQ_API_BASE', 'https://api.groq.com/openai/v1'),
+    ],
+
 ];

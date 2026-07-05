@@ -215,6 +215,30 @@ export const apiService = {
     };
   },
 
+  chat: async (messages: {role: string, content: string}[], provider: string = 'openai', model: string = 'GPT-4o'): Promise<string> => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // 'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ messages, provider, model })
+      });
+      
+      if (response.ok) {
+         const data = await response.json();
+         return data.response || data.reply || data.message || "Message received from backend.";
+      }
+    } catch (e) {
+      console.error("Backend chat failed, using fallback...", e);
+    }
+    
+    // Fallback Mock Data
+    return `Simulated backend response from ${model}. Note: Backend API connection failed. Please ensure the backend is running at http://localhost:8000.`;
+  },
+
   enhancePrompt: async (prompt: string, mode: string): Promise<{ enhancedPrompt: string; savings: number }> => {
     // Note: Assuming /prompts endpoint doesn't exactly match this yet, returning mock format but you can hook this up to your exact backend route
     return {
@@ -223,7 +247,7 @@ export const apiService = {
     };
   },
 
-  runScan: async (prompt: string, provider: 'openai' | 'gemini' | 'deepseek' | 'groq', model: string): Promise<Scan> => {
+  runScan: async (prompt: string, provider: 'openai' | 'gemini' | 'deepseek', model: string): Promise<Scan> => {
     try {
       const response = await fetch('http://localhost:8000/api/v1/scans', {
         method: 'POST',

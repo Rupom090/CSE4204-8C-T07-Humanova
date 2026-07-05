@@ -6,6 +6,7 @@ import { Login } from '@/pages/auth/Login';
 import { Register } from '@/pages/auth/Register';
 import { Dashboard } from '@/pages/dashboard/Dashboard';
 import { AiStudio } from '@/pages/ai-studio/AiStudio';
+import { AiChat } from '@/pages/ai-chat/AiChat';
 import { Verification } from '@/pages/verification/Verification';
 import { Analytics } from '@/pages/analytics/Analytics';
 import { Community } from '@/pages/community/Community';
@@ -37,6 +38,7 @@ export const Router: React.FC = () => {
                 <Routes>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/ai-studio" element={<AiStudio />} />
+                  <Route path="/ai-chat" element={<AiChat />} />
                   <Route path="/verification" element={<Verification />} />
                   <Route path="/verification/:scanId" element={<Verification />} />
                   <Route path="/analytics" element={<Analytics />} />

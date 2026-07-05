@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  MessageSquare
 } from 'lucide-react';
 import { useUiStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,6 +24,7 @@ export const Sidebar: React.FC = () => {
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'AI Studio', path: '/ai-studio', icon: <Binary className="w-5 h-5" /> },
+    { label: 'AI Chat', path: '/ai-chat', icon: <MessageSquare className="w-5 h-5" /> },
     { label: 'Verification', path: '/verification', icon: <ShieldCheck className="w-5 h-5" /> },
     { label: 'Analytics', path: '/analytics', icon: <BarChart3 className="w-5 h-5" /> },
     { label: 'Community', path: '/community', icon: <Users className="w-5 h-5" /> },
